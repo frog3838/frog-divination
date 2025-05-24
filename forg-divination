@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>數字起卦小工具</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; background: #f6f6f6; }
+    h1 { font-size: 1.5rem; text-align: center; margin-bottom: 1rem; }
+    input, button { padding: 0.5rem; margin: 0.25rem 0; width: 100%; }
+    pre { background: white; padding: 1rem; border-radius: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>🔮 數字起卦小工具</h1>
+  <label>下卦數字：</label>
+  <input type="number" id="bottomNum" placeholder="請輸入下卦數字">
+
+  <label>上卦數字：</label>
+  <input type="number" id="topNum" placeholder="請輸入上卦數字">
+
+  <label>動爻（1~6，可選）：</label>
+  <input type="number" id="movingYao" placeholder="不輸入則不變卦">
+
+  <button onclick="generateHexagram()">解卦！</button>
+
+  <pre id="result"></pre>
+
+  <script>
+    const trigramMap = ["坤（地）", "乾（天）", "兌（澤）", "離（火）", "震（雷）", "巽（風）", "坎（水）", "艮（山）", "坤（地）"];
+    const trigramToBinary = {
+      "乾（天）": [1, 1, 1], "兌（澤）": [0, 1, 1], "離（火）": [1, 0, 1],
+      "震（雷）": [0, 0, 1], "巽（風）": [1, 1, 0], "坎（水）": [0, 1, 0],
+      "艮（山）": [1, 0, 0], "坤（地）": [0, 0, 0]
+    };
+
+    const binaryToTrigram = {};
+    for (let key in trigramToBinary) binaryToTrigram[trigramToBinary[key].join()] = key;
+
+    function numberToTrigram(n) {
+      return trigramMap[n % 8];
+    }
+
+    function buildHexagram(bottom, top) {
+      const bottomT = numberToTrigram(bottom);
+      const topT = numberToTrigram(top);
+      const bin = [...trigramToBinary[bottomT], ...trigramToBinary[topT]];
+      return { bottomT, topT, bin };
+    }
+
+    function changeYao(bin, yao) {
+      const newBin = bin.slice();
+      const idx = 6 - yao;
+      if (idx >= 0 && idx < 6) newBin[idx] = 1 - newBin[idx];
+      return newBin;
+    }
+
+    function getTrigramName(bin3) {
+      return binaryToTrigram[bin3.join()] || "未知";
+    }
+
+    function displayHex(bin) {
+      return bin.slice().reverse().map((v, i) => `第${6 - i}爻: ${v === 1 ? "— —" : "———"}`).join("\n");
+    }
+
+    function generateHexagram() {
+      const b = parseInt(document.getElementById("bottomNum").value);
+      const t = parseInt(document.getElementById("topNum").value);
+      const m = parseInt(document.getElementById("movingYao").value);
+      if (isNaN(b) || isNaN(t)) {
+        alert("請輸入上下卦數字");
+        return;
+      }
+
+      const hex = buildHexagram(b, t);
+      const base = `【本卦】\n${displayHex(hex.bin)}\n上卦：${hex.topT}　下卦：${hex.bottomT}`;
+
+      let result = base;
+
+      if (!isNaN(m) && m >= 1 && m <= 6) {
+        const newBin = changeYao(hex.bin, m);
+        const newTop = getTrigramName(newBin.slice(3));
+        const newBottom = getTrigramName(newBin.slice(0, 3));
+        const changed = `\n\n【變卦】\n${displayHex(newBin)}\n上卦：${newTop}　下卦：${newBottom}`;
+        result += changed;
+      }
+
+      document.getElementById("result").textContent = result;
+    }
+  </script>
+</body>
+</html>
